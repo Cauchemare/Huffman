@@ -12,6 +12,7 @@ def change_value_to_key(huffmap):
 
 if __name__=="__main__":
     import pickle
+    
     parser=argparse.ArgumentParser()
     parser.add_argument("infile", help="pass infile to huff-compress/decompress for compression/decompression")
     args=parser.parse_args()
@@ -25,17 +26,11 @@ if __name__=="__main__":
         size = struct.unpack('I', f.read(4))[0]
         huffman_map = pickle.loads(f.read(size))
         left = struct.unpack('B', f.read(1))[0]
-        data = f.read(1)
-        datalist = []
-     
-        while not data == b'':
-            bdata = bin(struct.unpack('B', data)[0])[2:]
-            datalist.append(bdata)
-            data = f.read(1)
-
-    for i in range(len(datalist) - 1):
-        datalist[i] = '%s%s' % ('0' * (8 - len(datalist[i])), datalist[i])
-    datalist[-1] = '%s%s' % ('0' * (left - len(datalist[-1])), datalist[-1])
+        data = f.read()
+        if data:
+            datalist = ['{:0>8}'.format(bin(i)[2:])  for  i in data]
+    datalist[-1]=datalist[-1][8-left:]
+    #Important
     encode_data = ''.join(datalist)
 
     huffman_map_reversed = change_value_to_key(huffman_map)

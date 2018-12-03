@@ -48,46 +48,52 @@ def save_code(huff_map, node):
 
 
 if  __name__=='__main__':
+    from MyOutils import Timer
+    timer=Timer()
+    
+    
     parser=argparse.ArgumentParser()
     parser.add_argument("-s", "--symbolmodel", help="specify character- or word-based Huffman encoding -- default is character",
                     choices=["char","word"])
     parser.add_argument("infile", help="pass infile to huff-compress/decompress for compression/decompression")
     args=parser.parse_args()
     (r,_)=os.path.splitext(args.infile)
+
  
     with open(args.infile) as f:
         if args.symbolmodel =='char':
                 origindata =f.read()
         else:
-            origindata=re.findall(r'[a-zA-Z]+',f.read())
+            origindata=re.findall(r'[+-]?\w+',f.read())
     lettermap=Counter(origindata)
-                    
+    
     nodelist = [  Node(value=k,frequency=v)   for k,v in lettermap.items()  ]
-
+    
+    
     nodelist.sort(key=lambda n:n.frequency,reverse= True)
-    for i in range(len(nodelist) - 1):
+  
+    for i in range(len(nodelist) - 1):  #merge  len(nodelist)-1 times
         node1 = nodelist.pop()
         node2 = nodelist.pop()
         node = Node(left=node1,right=node2,frequency=node1.frequency + node2.frequency)
         nodelist.append(node)
         nodelist.sort(key=lambda n:n.frequency,reverse=True)
-        
-    root = nodelist[0]
+    
+    root = nodelist[0] 
     give_code(root)
-    huffman_map = {}
 
+    huffman_map = {}
     save_code(huffman_map, root)
-    
+
     pickle.dump(huffman_map,open(r +'-symbol-model.pkl', 'wb'))
-    
-    code_data = ''
-    for letter in origindata:
-        code_data += huffman_map[letter]
-    
+   
+    code_data = ''.join(huffman_map[l] for l in origindata)
+ 
+   
     huffman_map_bytes = pickle.dumps(huffman_map)
     symbol_mode_bytes=pickle.dumps(args.symbolmodel)
     
-        
+
     with open(r+'.bin', 'wb') as f:
         f.write(struct.pack('I', len(symbol_mode_bytes)))
         f.write(struct.pack('%ds' % len(symbol_mode_bytes), symbol_mode_bytes))
@@ -98,11 +104,9 @@ if  __name__=='__main__':
         f.write(struct.pack('B', len(code_data) % 8))
         for i in range(0, len(code_data), 8):
             if i + 8 < len(code_data):
-                f.write(struct.pack('B', int(code_data[i:i + 8], 2)))
+                f.write(struct.pack('B', int(code_data[i:i + 8], 2)))  #max( int(code_data[i:i+8],2)) =255 <= B
             else:
                 f.write(struct.pack('B', int(code_data[i:], 2)))
-  
-
 
  
 
